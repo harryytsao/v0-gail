@@ -11,7 +11,9 @@ export default async function DashboardPage() {
   let topLanguages: { language: string | null }[] = [];
 
   try {
+    console.log("[v0] Dashboard: creating Supabase client...");
     const supabase = await createClient();
+    console.log("[v0] Dashboard: Supabase client created, running queries...");
 
     const results = await Promise.all([
       supabase
@@ -43,9 +45,11 @@ export default async function DashboardPage() {
     scoredCount = results[3].count ?? 0;
     recentJobs = (results[4].data as typeof recentJobs) ?? [];
     topLanguages = (results[5].data as typeof topLanguages) ?? [];
+    console.log("[v0] Dashboard: queries completed successfully");
   } catch (e) {
     console.error("[v0] Dashboard query error:", e);
   }
+  console.log("[v0] Dashboard: rendering page");
 
   // Aggregate language counts client-side from sample
   const langCounts: Record<string, number> = {};
