@@ -3,38 +3,49 @@ import { StatCard } from "@/components/stat-card";
 import Link from "next/link";
 
 export default async function DashboardPage() {
-  const supabase = await createClient();
+  let conversationCount = 0;
+  let messageCount = 0;
+  let profileCount = 0;
+  let scoredCount = 0;
+  let recentJobs: { id: string; filename: string; status: string; processed_records: number; total_records: number }[] = [];
+  let topLanguages: { language: string | null }[] = [];
 
-  const [
-    { count: conversationCount },
-    { count: messageCount },
-    { count: profileCount },
-    { count: scoredCount },
-    { data: recentJobs },
-    { data: topLanguages },
-  ] = await Promise.all([
-    supabase
-      .from("conversations")
-      .select("*", { count: "exact", head: true }),
-    supabase.from("messages").select("*", { count: "exact", head: true }),
-    supabase
-      .from("user_profiles")
-      .select("*", { count: "exact", head: true }),
-    supabase
-      .from("user_profiles")
-      .select("*", { count: "exact", head: true })
-      .eq("profile_generated", true),
-    supabase
-      .from("ingestion_jobs")
-      .select("*")
-      .order("created_at", { ascending: false })
-      .limit(5),
-    supabase
-      .from("conversations")
-      .select("language")
-      .not("language", "is", null)
-      .limit(1000),
-  ]);
+  try {
+    const supabase = await createClient();
+
+    const results = await Promise.all([
+      supabase
+        .from("conversations")
+        .select("*", { count: "exact", head: true }),
+      supabase.from("messages").select("*", { count: "exact", head: true }),
+      supabase
+        .from("user_profiles")
+        .select("*", { count: "exact", head: true }),
+      supabase
+        .from("user_profiles")
+        .select("*", { count: "exact", head: true })
+        .eq("profile_generated", true),
+      supabase
+        .from("ingestion_jobs")
+        .select("*")
+        .order("created_at", { ascending: false })
+        .limit(5),
+      supabase
+        .from("conversations")
+        .select("language")
+        .not("language", "is", null)
+        .limit(1000),
+    ]);
+
+    conversationCount = results[0].count ?? 0;
+    messageCount = results[1].count ?? 0;
+    profileCount = results[2].count ?? 0;
+    scoredCount = results[3].count ?? 0;
+    recentJobs = (results[4].data as typeof recentJobs) ?? [];
+    topLanguages = (results[5].data as typeof topLanguages) ?? [];
+  } catch (e) {
+    console.error("[v0] Dashboard query error:", e);
+  }
 
   // Aggregate language counts client-side from sample
   const langCounts: Record<string, number> = {};
@@ -47,7 +58,7 @@ export default async function DashboardPage() {
     .sort(([, a], [, b]) => b - a)
     .slice(0, 8);
 
-  const hasData = (conversationCount ?? 0) > 0;
+  const hasData = conversationCount > 0;
 
   return (
     <div className="p-8">
@@ -64,22 +75,22 @@ export default async function DashboardPage() {
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard
           label="Conversations"
-          value={conversationCount ?? 0}
+          value={conversationCount}
           detail="Total ingested conversations"
         />
         <StatCard
           label="Messages"
-          value={messageCount ?? 0}
+          value={messageCount}
           detail="Total message records"
         />
         <StatCard
           label="Unique Users"
-          value={profileCount ?? 0}
+          value={profileCount}
           detail="Distinct user profiles"
         />
         <StatCard
           label="Profiled"
-          value={scoredCount ?? 0}
+          value={scoredCount}
           detail="Users with behavioral scores"
         />
       </div>
@@ -173,15 +184,8 @@ export default async function DashboardPage() {
               Recent Ingestion Jobs
             </h3>
             <div className="mt-4 flex flex-col gap-2">
-              {recentJobs && recentJobs.length > 0 ? (
-                recentJobs.map(
-                  (job: {
-                    id: string;
-                    filename: string;
-                    status: string;
-                    processed_records: number;
-                    total_records: number;
-                  }) => (
+              {recentJobs.length > 0 ? (
+                recentJobs.map((job) => (
                     <div
                       key={job.id}
                       className="flex items-center justify-between rounded-md bg-muted/50 px-3 py-2"
