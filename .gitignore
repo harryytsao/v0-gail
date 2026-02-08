@@ -1,5 +1,7 @@
 # See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 
+conversations_merged.json
+
 # dependencies
 /node_modules
 /.pnp
@@ -39,3 +41,19 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+dist/
+*.egg
+.venv/
+venv/
+.pytest_cache/
+htmlcov/
+.ruff_cache/
+
+# Data files (too large for git)
+conversations_merged.json
